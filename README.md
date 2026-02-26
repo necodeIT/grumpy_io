@@ -1,36 +1,114 @@
 # Grumpy IO
 
-Full IO mapping for Grumpy applications, providing a unified API for file system access, networking, and local storage across all platforms.
+`grumpy_io` provides cross-platform IO services and typed datasource adapters for Grumpy apps.
 
-## Modules
+It covers:
+- raw networking
+- raw filesystem
+- persistent local storage
+- typed datasource wrappers in each owning module
+- optional Grumpy cache/persistence compatibility adapters
 
-- [ ] File System Module
-  - [ ] File System CRUD operations
-  - [ ] File Picker
-  - [ ] Filesystem Watcher
-  - [ ] File Metadata Extraction
-- [ ] Networking Module
-  - [x] Network Requests
-  - [ ] Typed Response parsing via datasources
-  - [ ] WebSocket Support
-  - [ ] Network Connectivity Monitoring
-  - [ ] Data Streaming
-  - [ ] Downloading, with progress tracking
-  - [ ] Uploading, with progress tracking
-- [ ] Local Storage
-  - [ ] App Directories
-    - [ ] Temporary Directory/temp files
-    - [ ] Persistent Directory
-    - [ ] Cache Directory
-  - [ ] Cookies
-- [ ] Process management (desktop only, noop for web and mobile)
-  - [ ] Spawn processes
-  - [ ] Inter-process communication (IPC)
-  - [ ] Process monitoring and control
-  - [ ] Force single app instance
-  - [ ] Run shell commands
-  - [ ] Command line argument parsing (via config)
-- [ ] System information
-  - [ ] OS details
-  - [ ] Hardware specifications
-  - [ ] Environment variables
+## Design Goals
+
+- Keep public IO contracts backend-agnostic.
+- Return typed `IoResult<T>` instead of leaking backend exceptions.
+- Keep typed datasources close to their owning module.
+- Use compile-time platform selection for platform-specific services.
+
+## Module Layout
+
+### Networking Module
+
+Exports:
+- `NetworkService`
+- `FileTransferService`
+- `TypedNetworkDatasource`
+
+Default implementations:
+- `DioNetworkService`
+- `DefaultFileTransferService`
+- `DefaultTypedNetworkDatasource`
+
+### File System Module
+
+Exports:
+- `FileSystemService`
+- `TypedFileSystemDatasource`
+- `IoPath`, `FsMetadata`, `FsEntityType`
+
+Default implementations:
+- `DefaultFileSystemService` (platform-selected)
+- `DefaultTypedFileSystemDatasource`
+
+### Local Storage Module
+
+Exports:
+- `LocalStorageService`
+- `TypedLocalStorageDatasource`
+- `LocalStorageKey`, `LocalStorageValue`
+
+Default implementations:
+- `DefaultLocalStorageService` (platform-selected)
+- `DefaultTypedLocalStorageDatasource`
+
+Persistence behavior:
+- Native (`io`): persisted via `FileSystemService` in a JSON file.
+- Web: persisted in browser `localStorage` with cookie fallback.
+
+## Typed Datasources
+
+Typed datasources are intentionally colocated with their modules:
+- networking typed datasource lives in networking module
+- filesystem typed datasource lives in filesystem module
+- local-storage typed datasource lives in local-storage module
+
+Shared typed datasource concerns are in `shared_module`.
+
+## Platform-Specific Service Convention
+
+For services with platform-specific implementations:
+- platform files live under `<module>/infra/services/<service>/...`
+- an entrypoint file performs conditional export
+- concrete platform implementations expose the same symbols
+
+Example pattern:
+
+```dart
+export 'service_stub.dart'
+    if (dart.library.io) 'service_io.dart'
+    if (dart.library.js_interop) 'service_web.dart';
+```
+
+## Error Model
+
+All public IO surfaces use:
+- `IoResult<T>`
+- `IoOk<T>`
+- `IoErr<T>`
+- `IoFailure` with `IoFailureCode`
+
+This keeps consumers on one stable error contract across backends/platforms.
+
+## Grumpy Compatibility Layer
+
+`grumpy_compat` provides optional adapters for:
+- memory cache layer
+- persistent cache layer
+- cache pipeline
+- repo snapshot persistence
+- root module mixin wiring
+
+## Public Exports
+
+Package root exports:
+- `core`
+- `networking_module`
+- `file_system_module`
+- `local_storage_module`
+- `grumpy_compat`
+- `grumpy_io_module`
+
+## Status
+
+Current focus is V1 core IO and persistence surfaces. Process-management and system-information features remain out of scope for V1.

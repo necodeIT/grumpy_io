@@ -1,35 +1,58 @@
-import 'dart:typed_data';
-
 import 'package:grumpy/grumpy.dart';
-import 'package:grumpy_io/grumpy_io.dart';
 
-/// Service responsible for handling file system operations.
+import '../../../core/core.dart';
+import '../models/fs_metadata.dart';
+import '../models/io_path.dart';
+
+/// Service for raw filesystem operations.
 abstract class FileSystemService extends Service {
+  /// Creates a filesystem service.
+  FileSystemService.internal() : super();
+
+  /// Returns the DI-registered implementation.
+  factory FileSystemService() => Service.get<FileSystemService>();
+
+  /// Returns whether [path] exists.
+  Future<IoResult<bool>> exists(IoPath path);
+
+  /// Returns metadata for [path].
+  Future<IoResult<FsMetadata>> stat(IoPath path);
+
+  /// Reads file bytes from [file].
+  Future<IoResult<Bytes>> readBytes(IoPath file);
+
+  /// Writes [bytes] to [file].
+  Future<IoResult<void>> writeBytes(
+    IoPath file,
+    Bytes bytes, {
+    bool overwrite = true,
+    bool createParents = true,
+  });
+
+  /// Creates [directory].
+  Future<IoResult<void>> createDirectory(
+    IoPath directory, {
+    bool recursive = true,
+  });
+
+  /// Deletes entity at [path].
+  Future<IoResult<void>> delete(IoPath path, {bool recursive = false});
+
+  /// Lists entities under [directory].
+  Future<IoResult<List<IoPath>>> list(
+    IoPath directory, {
+    bool recursive = false,
+  });
+
+  /// Moves entity from [from] to [to].
+  Future<IoResult<void>> move(IoPath from, IoPath to, {bool overwrite = false});
+
+  /// Copies entity from [from] to [to].
+  Future<IoResult<void>> copy(IoPath from, IoPath to, {bool overwrite = false});
+
   @override
   String get group => '${super.group}.FileSystemService';
 
-  /// Internal constructor for subclasses.
-  FileSystemService.internal();
-
-  /// Returns the DI-registered implementation of [FileSystemService].
-  ///
-  /// Shorthand for [Service.get].
-  factory FileSystemService() {
-    return Service.get<FileSystemService>();
-  }
-
-  FsEntity read(String path);
-
-  Future<bool> fileExists(FsEntity file);
-
-  Future<void> writeFile(String path, ByteData content);
-
-  Future<void> deleteFile(FsEntity file);
-
-  Future<void> createDirectory(String path);
-
-  Future<void> deleteDirectory(
-    DirectoryFsEntity directory, {
-    bool recursive = false,
-  });
+  @override
+  bool get singelton => true;
 }

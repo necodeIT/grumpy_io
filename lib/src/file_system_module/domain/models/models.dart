@@ -1,2 +1,3 @@
-export 'files_system_config.dart';
-export 'file_entity.dart';
+export 'fs_entity_type.dart';
+export 'fs_metadata.dart';
+export 'io_path.dart';

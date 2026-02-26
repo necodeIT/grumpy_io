@@ -1,25 +1,54 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:grumpy/grumpy.dart';
 
-part 'network_request.freezed.dart';
-part 'network_request.g.dart';
+import '../../../core/core.dart';
+import 'http_method.dart';
 
-/// A network request for making HTTP calls.
-@freezed
-abstract class NetworkRequest with _$NetworkRequest implements Model {
-  /// Creates a new [NetworkRequest] instance.
-  const factory NetworkRequest({
-    required String url,
-    required HttpMethod method,
-    @Default({}) Map<String, String> headers,
-    @Default(null) dynamic body,
-    @Default({}) Map<String, String>? queryParameters,
-  }) = _NetworkRequest;
+/// Canonical network request model.
+class NetworkRequest extends Model {
+  /// Creates a network request.
+  const NetworkRequest({
+    required this.method,
+    required this.uri,
+    this.headers = const <String, String>{},
+    this.query = const <String, String>{},
+    this.bodyBytes,
+    this.contentType,
+    this.connectTimeout,
+    this.sendTimeout,
+    this.receiveTimeout,
+  });
 
-  /// Creates a [NetworkRequest] instance from a JSON map.
-  factory NetworkRequest.fromJson(Map<String, Object?> json) =>
-      _$NetworkRequestFromJson(json);
+  /// Request method.
+  final HttpMethod method;
+
+  /// Request target URI.
+  final Uri uri;
+
+  /// Request headers.
+  final Map<String, String> headers;
+
+  /// Query parameters merged into [uri].
+  final Map<String, String> query;
+
+  /// Optional request body bytes.
+  final Bytes? bodyBytes;
+
+  /// Optional request body content type.
+  final String? contentType;
+
+  /// Optional connection timeout.
+  final Duration? connectTimeout;
+
+  /// Optional upload timeout.
+  final Duration? sendTimeout;
+
+  /// Optional download timeout.
+  final Duration? receiveTimeout;
+
+  /// Returns a URI with [query] merged into existing query parameters.
+  Uri get resolvedUri {
+    if (query.isEmpty) return uri;
+    final merged = <String, String>{...uri.queryParameters, ...query};
+    return uri.replace(queryParameters: merged);
+  }
 }
-
-/// An enumeration of HTTP methods.
-enum HttpMethod { get, post, put, delete, patch, head, options }
