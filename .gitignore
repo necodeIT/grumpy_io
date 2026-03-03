@@ -10,3 +10,4 @@ pubspec.lock
 .fvm/
 
 grumpy_lints.log
+pubspec_overrides.yaml
