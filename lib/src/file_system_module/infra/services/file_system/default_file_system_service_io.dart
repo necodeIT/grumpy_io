@@ -142,6 +142,14 @@ class DefaultFileSystemService extends FileSystemService {
               details: <String, Object?>{'path': path.value},
             ),
           );
+        case FileSystemEntityType.pipe:
+          return IoErr<void>(
+            IoFailure(
+              code: IoFailureCode.unsupported,
+              message: 'Unsupported filesystem entity type.',
+              details: <String, Object?>{'path': path.value},
+            ),
+          );
       }
       return const IoOk<void>(null);
     } on FileSystemException catch (error, stackTrace) {
@@ -225,6 +233,14 @@ class DefaultFileSystemService extends FileSystemService {
             IoFailure(
               code: IoFailureCode.unsupported,
               message: 'Unsupported source entity type for move.',
+              details: <String, Object?>{'path': from.value},
+            ),
+          );
+        case FileSystemEntityType.pipe:
+          return IoErr<void>(
+            IoFailure(
+              code: IoFailureCode.unsupported,
+              message: 'Unsupported filesystem entity type.',
               details: <String, Object?>{'path': from.value},
             ),
           );
