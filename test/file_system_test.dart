@@ -1,3 +1,8 @@
+// IoPath also supports equality with String, so we need to ignore unrelated type equality checks in some tests
+// ignore_for_file: unrelated_type_equality_checks
+
+import 'dart:io';
+
 import 'package:test/test.dart';
 import 'package:grumpy/grumpy.dart';
 import 'package:grumpy_io/grumpy_io.dart';
@@ -32,7 +37,7 @@ void main() {
           final path1 = const IoPath('test');
           final path2 = const IoPath('file');
           final combined = path1 + path2;
-          expect(combined.value, 'tesfile');
+          expect(combined.value, 'testfile');
         });
 
         test('IoPath / operator', () {
@@ -41,138 +46,173 @@ void main() {
           final combined = path1 / path2;
           expect(combined.value, 'test/file');
         });
+
+        test('IoPath == operator (IoPath)', () {
+          final path1 = const IoPath('test');
+          final path2 = const IoPath('test');
+          final path3 = const IoPath('other');
+          expect(path1 == path2, true);
+          expect(path1 == path3, false);
+        });
+
+        test('IoPath == operator (String)', () {
+          final path1 = const IoPath('test');
+          expect(path1 == 'test', true);
+          expect(path1 == 'other', false);
+        });
+
+        test('IoPath == operator (other types)', () {
+          final path1 = const IoPath('test');
+          expect(path1 == 123, false);
+        });
       });
 
       group('FsMetadata', () {});
     });
 
     group('Services', () {
-      group('FileSystemService', () {
-        final fs = FileSystemService();
+      group(
+        'DefaultFileSystemService',
+        () {
+          final fs = DefaultFileSystemService();
 
-        test('writeBytes() creates a file', () async {
-          final path = const IoPath('test_file.txt');
-          final content = 'Hello, World!';
-          final result = await fs.writeBytes(
-            path,
-            content.convert.toUtf8Bytes(),
-          );
-          expect(result.isOk, true);
-          final exists = await fs.exists(path);
-          expect(exists.isOk, true);
-          expect(exists.valueOrNull, true);
-        });
+          final file0 = File('build/test/files/file0.txt');
+          final file1 = File('build/test/files/file1.txt');
+          final file2 = File('build/test/files/file2.txt');
 
-        test('exists() checks if a file exists', () async {
-          final path = const IoPath('test_file.txt');
-          final exists = await fs.exists(path);
-          expect(exists.isOk, true);
-          expect(exists.valueOrNull, true);
-        });
+          final testPath = const IoPath('build/test/files');
+          final filePath0 = testPath / const IoPath('file0.txt');
+          final filePath1 = testPath / const IoPath('file1.txt');
+          final filePath2 = testPath / const IoPath('file2.txt');
 
-        test('readBytes() reads a file', () async {
-          final path = const IoPath('test_file.txt');
-          final bytes = await fs.readBytes(path);
+          final Map<File, String?> requiredFiles = {
+            file0: 'Hello, World!',
+            file1: null,
+            file2: null,
+          };
 
-          expect(bytes.isOk, true);
-          final content = bytes.valueOrNull!.convert.toUtf8String();
-          expect(content, 'Hello, World!');
-        });
+          setUp(() async {
+            Directory('build/test/files').createSync(recursive: true);
+            for (final entry in requiredFiles.entries) {
+              if (entry.value != null) {
+                await entry.key.writeAsString(entry.value!);
+              } else {
+                entry.key.createSync();
+              }
+            }
+          });
 
-        test('move() moves a file', () async {
-          final source = const IoPath('test_file.txt');
-          final destination = const IoPath('moved_test_file.txt');
+          tearDown(() async {
+            final directory = Directory('build/test/files');
 
-          final result = await fs.move(source, destination);
-          expect(result.isOk, true);
+            if (!directory.existsSync()) {
+              return;
+            }
+            directory.deleteSync(recursive: true);
+          });
 
-          final existsSource = await fs.exists(source);
-          final existsDestination = await fs.exists(destination);
-          expect(existsSource.isOk, true);
-          expect(existsSource.valueOrNull, false);
-          expect(existsDestination.isOk, true);
-          expect(existsDestination.valueOrNull, true);
-        });
+          test('writeBytes() creates a file', () async {
+            final path = testPath / const IoPath('file3.txt');
+            final content = 'Hello, World!';
+            final result = await fs.writeBytes(
+              path,
+              content.convert.toUtf8Bytes(),
+            );
+            expect(result.isOk, true);
 
-        test('copy() copies a file', () async {
-          final source = const IoPath('moved_test_file.txt');
-          final destination = const IoPath('copied_test_file.txt');
+            final file = File(path.value);
 
-          final result = await fs.copy(source, destination);
-          expect(result.isOk, true);
+            expect(file.existsSync(), true);
+            expect(file.readAsStringSync(), 'Hello, World!');
+          });
 
-          final existsSource = await fs.exists(source);
-          final existsDestination = await fs.exists(destination);
-          expect(existsSource.isOk, true);
-          expect(existsSource.valueOrNull, true);
-          expect(existsDestination.isOk, true);
-          expect(existsDestination.valueOrNull, true);
-        });
+          test('exists() checks if a file exists', () async {
+            final exists = await fs.exists(filePath0);
+            expect(exists.isOk, true);
+            expect(exists.valueOrNull, true);
+          });
 
-        test('createDirectory() creates a directory', () async {
-          final path = const IoPath('test_directory');
+          test('readBytes() reads a file', () async {
+            final bytes = await fs.readBytes(filePath0);
 
-          final result = await fs.createDirectory(path);
-          expect(result.isOk, true);
+            expect(bytes.isOk, true);
+            final content = bytes.valueOrNull!.convert.toUtf8String();
+            expect(content, requiredFiles[file0]);
+          });
 
-          final exists = await fs.exists(path);
-          expect(exists.isOk, true);
-          expect(exists.valueOrNull, true);
-        });
+          test('move() moves a file', () async {
+            final source = filePath0;
+            final destination = testPath / const IoPath('moved_file0.txt');
 
-        test('list() lists contents of a directory', () async {
-          final path = const IoPath('test_directory');
-          final copy = const IoPath('copied_test_file.txt');
-          final moved = const IoPath('moved_test_file.txt');
+            final result = await fs.move(source, destination);
+            expect(result.isOk, true);
 
-          final result1 = await fs.move(copy, path / copy);
-          final result2 = await fs.move(moved, path / moved);
-          expect(result1.isOk, true);
-          expect(result2.isOk, true);
+            final sourceFile = file0;
+            final destinationFile = File(destination.value);
 
-          final contents = await fs.list(path);
-          expect(contents.isOk, true);
-          expect(contents.valueOrNull, contains(copy));
-          expect(contents.valueOrNull, contains(moved));
-        });
+            expect(sourceFile.existsSync(), false);
+            expect(destinationFile.existsSync(), true);
+            expect(destinationFile.readAsStringSync(), requiredFiles[file0]);
+          });
 
-        test('delete() deletes a file', () async {
-          final path = const IoPath('test_file.txt');
-          final content = 'Hello, World!';
+          test('copy() copies a file', () async {
+            final source = filePath0;
+            final destination = testPath / const IoPath('copied_file0.txt');
 
-          final writeResult = await fs.writeBytes(
-            path,
-            content.convert.toUtf8Bytes(),
-          );
-          expect(writeResult.isOk, true);
+            final result = await fs.copy(source, destination);
+            expect(result.isOk, true);
 
-          final deleteResult = await fs.delete(path);
-          expect(deleteResult.isOk, true);
+            final sourceFile = file0;
+            final destinationFile = File(destination.value);
 
-          final exists = await fs.exists(path);
-          expect(exists.isOk, true);
-          expect(exists.valueOrNull, false);
-        });
+            expect(sourceFile.existsSync(), true);
+            expect(sourceFile.readAsStringSync(), requiredFiles[file0]);
+            expect(destinationFile.existsSync(), true);
+            expect(destinationFile.readAsStringSync(), requiredFiles[file0]);
+          });
 
-        test('delete() recursively deletes a directory', () async {
-          final path = const IoPath('test_directory');
-          final copy = path / const IoPath('copied_test_file.txt');
-          final moved = path / const IoPath('moved_test_file.txt');
+          test('createDirectory() creates a directory', () async {
+            final path = testPath / const IoPath('test_directory');
 
-          final result = await fs.delete(path, recursive: true);
-          expect(result.isOk, true);
+            final result = await fs.createDirectory(path);
+            expect(result.isOk, true);
 
-          final exists = await fs.exists(path);
-          final copyExits = await fs.exists(copy);
-          final movedExists = await fs.exists(moved);
-          expect(exists.isOk, true);
-          expect(exists.valueOrNull, false);
-          expect(copyExits.isOk, true);
-          expect(copyExits.valueOrNull, false);
-          expect(movedExists.isOk, true);
-          expect(movedExists.valueOrNull, false);
-        });
-      });
+            final directory = Directory(path.value);
+            expect(directory.existsSync(), true);
+          });
+
+          test('list() lists contents of a directory', () async {
+            final contents = await fs.list(testPath);
+            expect(contents.isOk, true);
+            expect(contents.valueOrNull, contains(filePath0));
+            expect(contents.valueOrNull, contains(filePath1));
+            expect(contents.valueOrNull, contains(filePath2));
+          });
+
+          test('delete() deletes a file', () async {
+            final deleteResult = await fs.delete(filePath0);
+            expect(deleteResult.isOk, true);
+
+            expect(file0.existsSync(), false);
+          });
+
+          test('delete() recursively deletes a directory', () async {
+            final result = await fs.delete(testPath, recursive: true);
+            expect(result.isOk, true);
+
+            final directory = Directory(testPath.value);
+            expect(directory.existsSync(), false);
+          });
+        },
+        onPlatform: {
+          'windows': const Timeout.factor(2),
+          'linux': const Timeout.factor(2),
+          'mac-os': const Timeout.factor(2),
+          'browser': const Skip(
+            'File system operations are not supported on the web',
+          ),
+        },
+      );
     });
   });
 }
