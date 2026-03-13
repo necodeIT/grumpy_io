@@ -1,9 +1,9 @@
 import 'package:grumpy_io/grumpy_io.dart';
 
 /// Native file transfer implementation.
-class DefaultFileTransferService extends FileTransferService {
+class DioFileTransferService extends FileTransferService {
   /// Creates a file transfer service.
-  DefaultFileTransferService({
+  DioFileTransferService({
     NetworkService? networkService,
     FileSystemService? fileSystemService,
   }) : _networkService = networkService ?? NetworkService(),
@@ -157,8 +157,8 @@ class DefaultFileTransferService extends FileTransferService {
 }
 
 /// Creates the default [FileTransferService].
-DefaultFileTransferService createDefaultFileTransferService({
+DioFileTransferService createDefaultFileTransferService({
   NetworkService? networkService,
 }) {
-  return DefaultFileTransferService(networkService: networkService);
+  return DioFileTransferService(networkService: networkService);
 }

@@ -133,8 +133,3 @@ class DefaultNetworkCancelToken implements NetworkCancelToken {
     _token.cancel(reason);
   }
 }
-
-/// Creates the default [NetworkService].
-DioNetworkService createDefaultNetworkService({Dio? dio}) {
-  return DioNetworkService(dio: dio);
-}

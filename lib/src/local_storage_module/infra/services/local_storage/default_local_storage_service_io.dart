@@ -9,10 +9,10 @@ import 'package:crypto/crypto.dart';
 /// Default local storage service implementation for desktop platforms.
 class DefaultLocalStorageService extends LocalStorageService {
   /// Default local storage service implementation for desktop platforms.
-  DefaultLocalStorageService() : super.internal();
+  DefaultLocalStorageService(this.config) : super.internal();
 
   /// The configuration for the local storage service.
-  GrumpyIoConfig get config => RootModule.getConfig<GrumpyIoConfig>();
+  final LocalStorageConfig config;
 
   final LocalStorageValueCodec _codec = LocalStorageValueCodec();
 
@@ -159,4 +159,7 @@ class DefaultLocalStorageService extends LocalStorageService {
   Future<IoResult<void>> remove(StorageKey key) async {
     return _fileSystemService.delete(pathFromKey(key));
   }
+
+  @override
+  bool get singelton => true;
 }

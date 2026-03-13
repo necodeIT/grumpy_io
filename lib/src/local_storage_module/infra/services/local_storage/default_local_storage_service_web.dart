@@ -10,7 +10,7 @@ import 'package:web/web.dart' as web;
 /// Default local storage service implementation for web.
 class DefaultLocalStorageService extends LocalStorageService {
   /// Default local storage service implementation for web.
-  const DefaultLocalStorageService() : super.internal();
+  DefaultLocalStorageService(LocalStorageConfig config) : super.internal();
 
   /// The codec used to encode and decode local storage values.
   final codec = const LocalStorageValueStringCodec();

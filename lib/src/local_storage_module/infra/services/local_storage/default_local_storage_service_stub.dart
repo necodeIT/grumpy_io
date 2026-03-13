@@ -9,7 +9,7 @@ import 'package:grumpy/grumpy.dart';
 /// Default noop local storage service implementation for unsupported platforms.
 class DefaultLocalStorageService extends LocalStorageService {
   /// Default noop local storage service implementation for unsupported platforms.
-  const DefaultLocalStorageService() : super.internal();
+  DefaultLocalStorageService(LocalStorageConfig config) : super.internal();
 
   @override
   Future<IoResult<void>> clearNamespace(String namespace) async =>

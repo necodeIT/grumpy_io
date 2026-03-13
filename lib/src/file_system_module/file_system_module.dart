@@ -6,7 +6,9 @@ import 'infra/infra.dart';
 export 'domain/domain.dart';
 export 'infra/infra.dart';
 
-/// Module responsible for registering default filesystem services.
+/// Provides file system capabilities.
+///
+/// {@macro additional_permissions_note}
 class FileSystemModule<RouteType, Config extends Object>
     extends Module<RouteType, Config> {
   @override
@@ -15,20 +17,34 @@ class FileSystemModule<RouteType, Config extends Object>
   @override
   List<Route<RouteType, Config>> get routes => <Route<RouteType, Config>>[];
 
-  @override
-  void bindExternalDeps(Bind<Object, Config> bind) {}
+  /// Builder for the [FileSystemService] implementation.
+  ///
+  /// Defaults to [DefaultFileSystemService] for the current platform.
+  ///
+  /// {@template platform_support_io}
+  /// **Note: Currently only supports target platforms where the `dart:io` library is available. For unsupported platforms, it will return an unsupported error.**
+  /// {@endtemplate}
+  ///
+  /// Override to provide support for additional platforms or to customize the default implementation.
+  InjectableFactory<FileSystemService, Config> get fileSystemServiceBuilder =>
+      (_, _) => DefaultFileSystemService();
+
+  /// Builder for the [TypedFileSystemDatasource] implementation.
+  ///
+  /// Defaults to [DefaultTypedFileSystemDatasource]. Can be overridden to provide a custom implementation that uses the [FileSystemService] or to customize the default implementation.
+  InjectableFactory<TypedFileSystemDatasource, Config>
+  get typedFileSystemDatasourceBuilder =>
+      (cfg, get) => DefaultTypedFileSystemDatasource(
+        fileSystemService: get<FileSystemService>(),
+      );
 
   @override
   void bindServices(Bind<Service, Config> bind) {
-    bind<FileSystemService>((_, __) => DefaultFileSystemService());
+    bind<FileSystemService>(fileSystemServiceBuilder);
   }
 
   @override
   void bindDatasources(Bind<Datasource, Config> bind) {
-    bind<TypedFileSystemDatasource>((_, get) {
-      return DefaultTypedFileSystemDatasource(
-        fileSystemService: get<FileSystemService>(),
-      );
-    });
+    bind<TypedFileSystemDatasource>(typedFileSystemDatasourceBuilder);
   }
 }
