@@ -104,6 +104,7 @@ class DioNetworkService extends NetworkService {
       DioExceptionType.connectionTimeout => IoFailureCode.timeout,
       DioExceptionType.sendTimeout => IoFailureCode.timeout,
       DioExceptionType.receiveTimeout => IoFailureCode.timeout,
+      DioExceptionType.transformTimeout => IoFailureCode.timeout,
       DioExceptionType.cancel => IoFailureCode.cancelled,
       DioExceptionType.badResponse => IoFailureCode.networkError,
       DioExceptionType.connectionError => IoFailureCode.networkError,
